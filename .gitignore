@@ -1,3 +1,4 @@
-.claude/clauderules.md
-.claude/claudy_log.md
-# Clauderules
+#gitignore file for the project
+
+clauderules.md
+claudy_log.md
