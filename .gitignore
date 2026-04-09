@@ -1,4 +1,4 @@
-#gitignore file for the project
-
-clauderules.md
-claudy_log.md
+#gitignore
+.claude/clauderules.md
+.claude/claudy_log.md
+*.pyc
