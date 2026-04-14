@@ -2,3 +2,5 @@
 .claude/clauderules.md
 .claude/claudy_log.md
 *.pyc
+Claude.md
+/utils/__pycache__/*.pyc

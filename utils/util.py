@@ -120,7 +120,7 @@ def compute_metric(output, target, iou_v):
     return torch.tensor(correct, dtype=torch.bool, device=output.device)
 
 
-def non_max_suppression(outputs, confidence_threshold=0.001, iou_threshold=0.65):
+def non_max_suppression(outputs, confidence_threshold=0.001, iou_threshold=0.65, class_agnostic=False):
     max_wh = 7680
 
 
@@ -155,8 +155,11 @@ def non_max_suppression(outputs, confidence_threshold=0.001, iou_threshold=0.65)
             continue
         x = x[x[:, 4].argsort(descending=True)]  # sort by confidence and remove excess boxes
 
-        # Batched NMS
-        c = x[:, 5:6] * max_wh  # classes
+        # Batched NMS (per-class offset) or class-agnostic NMS
+        if class_agnostic:
+            c = torch.zeros_like(x[:, 5:6])
+        else:
+            c = x[:, 5:6] * max_wh  # classes
         boxes, scores = x[:, :4] + c, x[:, 4]  # boxes, scores
         indices = torchvision.ops.nms(boxes, scores, iou_threshold)  # NMS
 

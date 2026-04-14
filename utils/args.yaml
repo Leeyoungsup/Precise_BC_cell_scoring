@@ -18,9 +18,8 @@ flip_lr: 0.50000000000            # image flip left-right (probability)
 mosaic: 1.000000000000            # image mosaic (probability)
 mix_up: 0.000000000000            # image mix-up (probability)
 names:
-  0: Neutrophil
-  1: Epithelial
-  2: Lymphocyte
-  3: Plasma
-  4: Eosinophil
-  5: Connective tissue
+    0: "class0"   # 0+
+    1: "class1"  # 1+
+    2: "class2"   # 2+
+    3: "class3"   # 3+
+    4: "other"
