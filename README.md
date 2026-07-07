@@ -207,6 +207,17 @@ HER2 qualitative prediction:
 |---|---|
 | ![HER2 training progress](docs/results/her2_training_progress_epoch_3000.png) | ![ER/PR training progress](docs/results/er_pr_training_progress_epoch_1000.png) |
 
+### Tumor / non-tumor region proof-of-concept
+
+HER2 모델 prediction point를 class0-3과 `other`로 나눈 뒤, density map을 만들어 patch 단위 tumor/non-tumor 후보 영역을 그린 예시입니다. 이 결과는 hard segmentation label이 아니라 cell-class density 기반 pseudo-region입니다.
+
+- 예시 모음: `docs/results/tumor_region_examples/README.md`
+- 생성 스크립트: `scripts/make_tumor_region_examples.py`
+
+```bash
+MPLCONFIGDIR=/tmp/matplotlib /home/user/anaconda3/envs/urban/bin/python scripts/make_tumor_region_examples.py --source model --num-images 5
+```
+
 ## COCO/YOLO 형식 학습 스크립트
 
 노트북 외에 `YOLOv11-pt-master/main.py`는 COCO-style directory를 직접 학습할 수 있습니다. 기본 데이터 위치는 코드 안의 `data_dir = '../Dataset/COCO'`입니다.
