@@ -211,11 +211,11 @@ HER2 qualitative prediction:
 
 HER2 모델 prediction point를 class0-3과 `other`로 나눈 뒤, density map을 만들어 patch 단위 tumor/non-tumor 후보 영역을 그린 예시입니다. 이 결과는 hard segmentation label이 아니라 cell-class density 기반 pseudo-region입니다.
 
-- 예시 모음: `docs/results/tumor_region_examples/README.md`
+- 예시 모음: `docs/results/tumor_region_examples_filled/README.md`
 - 생성 스크립트: `scripts/make_tumor_region_examples.py`
 
 ```bash
-MPLCONFIGDIR=/tmp/matplotlib /home/user/anaconda3/envs/urban/bin/python scripts/make_tumor_region_examples.py --source model --num-images 5
+MPLCONFIGDIR=/tmp/matplotlib /home/user/anaconda3/envs/urban/bin/python scripts/make_tumor_region_examples.py --source model --num-images 5 --filled-regions --out-dir docs/results/tumor_region_examples_filled
 ```
 
 ## COCO/YOLO 형식 학습 스크립트

@@ -120,6 +120,36 @@ def clean_mask(mask, min_area):
     return cleaned
 
 
+def smooth_filled_regions(tumor_region, support):
+    region = (tumor_region > 0).astype(np.uint8) * 255
+    region = cv2.medianBlur(region, 21)
+
+    kernel = np.ones((21, 21), np.uint8)
+    region = cv2.morphologyEx(region, cv2.MORPH_CLOSE, kernel, iterations=1)
+    region = cv2.morphologyEx(region, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    return ((region > 0) & support)
+
+
+def make_tissue_support(image, total_density, active_threshold):
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    saturation = hsv[:, :, 1]
+    value = hsv[:, :, 2]
+
+    # Keep stained tissue, but remove near-white empty background.
+    tissue = ((saturation > 8) | (value < 242)).astype(np.uint8) * 255
+    kernel = np.ones((15, 15), np.uint8)
+    tissue = cv2.morphologyEx(tissue, cv2.MORPH_CLOSE, kernel, iterations=2)
+    tissue = cv2.morphologyEx(tissue, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    cell_field = (total_density > active_threshold).astype(np.uint8) * 255
+    field_kernel = np.ones((41, 41), np.uint8)
+    cell_field = cv2.dilate(cell_field, field_kernel, iterations=1)
+    cell_field = cv2.morphologyEx(cell_field, cv2.MORPH_CLOSE, field_kernel, iterations=1)
+
+    return ((tissue > 0) & (cell_field > 0))
+
+
 def overlay_regions(image, tumor_mask, non_tumor_mask):
     overlay = image.copy()
     tumor_color = np.array([255, 40, 40], dtype=np.uint8)
@@ -200,6 +230,8 @@ def main():
     parser.add_argument("--nms-iou", type=float, default=0.45)
     parser.add_argument("--sigma", type=float, default=24.0)
     parser.add_argument("--min-area", type=int, default=900)
+    parser.add_argument("--active-threshold", type=float, default=0.03)
+    parser.add_argument("--filled-regions", action="store_true")
     parser.add_argument("--source", choices=["model", "label"], default="model")
     args = parser.parse_args()
 
@@ -232,9 +264,19 @@ def main():
         total_density = tumor_density + other_density
         tumor_score = tumor_density / (total_density + 1e-6)
 
-        active = total_density > 0.08
-        tumor_mask = clean_mask((tumor_score >= 0.55) & active, args.min_area)
-        non_tumor_mask = clean_mask((tumor_score <= 0.35) & active, args.min_area)
+        if args.filled_regions:
+            support = make_tissue_support(image, total_density, args.active_threshold)
+            tumor_region = smooth_filled_regions((tumor_score >= 0.5) & support, support)
+
+            # In filled mode, every supported tissue pixel must belong to exactly
+            # one region. Do not clean the two masks independently, since that
+            # creates unlabeled gaps between tumor and non-tumor boundaries.
+            tumor_mask = tumor_region.astype(np.uint8) * 255
+            non_tumor_mask = (support & (~tumor_region)).astype(np.uint8) * 255
+        else:
+            active = total_density > 0.08
+            tumor_mask = clean_mask((tumor_score >= 0.55) & active, args.min_area)
+            non_tumor_mask = clean_mask((tumor_score <= 0.35) & active, args.min_area)
 
         out_name = f"example_{idx}_{image_path.stem}.png"
         out_path = out_dir / out_name
