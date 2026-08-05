@@ -1,0 +1,5 @@
+Model,Validation images,Checkpoint epoch,DQ,CQ,PQ,Macro F1,Micro F1,Mean IoU,Mean center error (px),Avg FP/image
+HER2 scoring,1441,520,0.9289,0.9315,0.8653,0.7986,0.8653,0.8145,1.08,24.07
+ER/PR scoring,1531,340,0.8735,0.8716,0.7614,0.6649,0.7614,0.8293,1.02,37.08
+Nucleus BR tumor/non-tumor,1531,279,0.8750,0.9257,0.8100,0.8095,0.8100,0.8295,1.02,36.55
+Membrane BR tumor/non-tumor,1441,247,0.9254,0.9532,0.8821,0.8806,0.8821,0.8170,1.06,27.05

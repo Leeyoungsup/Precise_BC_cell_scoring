@@ -1,18 +1,18 @@
 Category,Metric,Value
-Detection (class-agnostic),Total GT boxes,607829
-,Total Predictions,666478
-,Matched (TP_det),588863
-,Detection Precision,0.8835
-,Detection Recall,0.9688
-,Detection F1 (= DQ),0.9242
-Localization,Mean IoU (matched),0.8315
-,Mean Center Err. (px),0.95 ± 0.72
-,Median Center Err. (px),0.80
-Classification (matched),Accuracy (= CQ),0.9465
-,Macro F1,0.8221
-,Micro F1,0.8748
-,Weighted F1,0.8744
-Panoptic Quality,DQ (Detection Quality),0.9242
-,CQ (Classification Q.),0.9465
-,PQ = DQ × CQ,0.8748
-FROC,Avg FP / image,26.94
+Detection (class-agnostic),Total GT boxes,299779
+,Total Predictions,324780
+,Matched (TP_det),290092
+,Detection Precision,0.8932
+,Detection Recall,0.9677
+,Detection F1 (= DQ),0.9289
+Localization,Mean IoU (matched),0.8145
+,Mean Center Err. (px),1.08 ± 0.73
+,Median Center Err. (px),0.97
+Classification (matched),Accuracy (= CQ),0.9315
+,Macro F1,0.7986
+,Micro F1,0.8653
+,Weighted F1,0.8663
+Panoptic Quality,DQ (Detection Quality),0.9289
+,CQ (Classification Q.),0.9315
+,PQ = DQ × CQ,0.8653
+FROC,Avg FP / image,24.07
