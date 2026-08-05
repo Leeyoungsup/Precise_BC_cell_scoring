@@ -15,6 +15,13 @@ summary (`*_table2_point_detection_summary.csv`).
 The Notion-ready ER/PR report is in `er_pr_notion.md`, with its eight image
 assets under `er_pr_figures/`.
 
+The binary Tumor/Non-tumor reports are in
+`membrane_br_tumor_notion.md` and `nucleus_br_tumor_notion.md`. Their figure
+assets are stored in the matching `*_figures/` directories. Both reports start
+with an AI-assistant context block documenting data paths, `was_nonT` label
+semantics, class mapping, checkpoint paths, and the distinction from
+tissue-level tumor segmentation.
+
 These numbers are validation results because this split was used during model
 selection. A separate patient/slide-level holdout set is required for an
 unbiased final test result.
