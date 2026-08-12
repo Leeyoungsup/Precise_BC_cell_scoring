@@ -238,6 +238,71 @@ MPLCONFIGDIR=/tmp/matplotlib /home/user/anaconda3/envs/urban/bin/python scripts/
 
 YOLO label txt는 한 줄에 `class cx cy w h` 형식이며, 좌표는 0-1 정규화 값입니다.
 
+## Hierarchical tumor / grade 모델
+
+비종양 세포가 0+/1+/2+/3+로 분류되는 오류를 줄이기 위한 계층형 모델이
+추가되어 있습니다. 기존 5-class 모델은 그대로 유지되며 새 모델은 다음 세
+결정을 분리합니다.
+
+1. cell objectness
+2. Tumor / Non-tumor
+3. Tumor인 경우에만 0+/1+/2+/3+
+
+기존 HER2 checkpoint의 backbone, FPN, box head와 classification feature를
+자동으로 이관해 학습을 시작합니다.
+
+```bash
+/home/user/anaconda3/envs/urban/bin/python train_hierarchical.py \
+  --stain her2 \
+  --model-size m \
+  --epochs 300 \
+  --batch-size 16 \
+  --false-tumor-weight 2.0
+```
+
+기본 출력 경로는
+`../../model/precise_BC_cell_scoring/her2_hierarchical_yolov11/`입니다.
+학습/검증 분리는 인접 patch 누수를 막기 위해 slide 단위로 수행합니다.
+
+추론 출력은 기존 모델과 동일하게 `[xywh, class0, class1, class2, class3,
+other]` 형식입니다. 명시적인 tumor threshold를 적용하려면 다음처럼 사용할
+수 있습니다.
+
+```python
+from nets import nn
+from utils import util
+from utils.hierarchical import apply_tumor_gate
+
+model = nn.yolo_v11_m_hierarchical(num_grades=4).to(device)
+checkpoint = torch.load('best_model.pt', map_location=device, weights_only=False)
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
+with torch.no_grad():
+    components = model(images, return_components=True)
+    predictions = apply_tumor_gate(components, tumor_threshold=0.6)
+    detections = util.non_max_suppression(
+        predictions, confidence_threshold=0.25,
+        iou_threshold=0.3, class_agnostic=True,
+    )
+```
+
+`tumor_threshold`는 slide-level validation set에서 정하며, non-tumor → tumor
+오류를 더 강하게 억제하려면 값을 높입니다. `false_tumor_weight`도 같은
+목표를 직접 반영하는 학습 가중치이며, 2.0에서 시작해 validation 결과로
+조정하는 것을 권장합니다.
+
+기존 평가 노트북과 동일한 Table 1~2 및 Figure 1~8을 생성하는 계층형 평가
+노트북도 제공합니다.
+
+- `Precise_IHC_HER2_hierarchical_test.ipynb`
+- `Precise_IHC_ER_PR_hierarchical_test.ipynb`
+
+두 노트북은 해당 계층형 train 노트북과 동일한 slide-level validation split을
+사용하며, `TUMOR_THRESHOLD`를 통과한 세포에만 0+/1+/2+/3+를 부여합니다.
+
+### COCO/YOLO 실행
+
 학습:
 
 ```bash

@@ -737,7 +737,9 @@ def compute_distance_matrix(centers1, centers2):
     return distances
 
 
-def compute_point_label_metrics_single(model, val_loader, device, params, distance_threshold=16):
+def compute_point_label_metrics_single(model, val_loader, device, params,
+                                       distance_threshold=16, class_agnostic_nms=False,
+                                       tumor_threshold=None):
     """
     Point-label에 최적화된 검증 메트릭 계산 (일반 YOLO, tissue context 없음)
     - Distance-based matching (IoU 대신 중심점 거리 사용)
@@ -750,6 +752,8 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
         device: 디바이스
         params: 파라미터 (클래스 이름 등)
         distance_threshold: 매칭 거리 임계값 (픽셀 단위, 기본 16px)
+        class_agnostic_nms: 클래스 간 중복 box도 제거할지 여부
+        tumor_threshold: 계층형 모델의 hard gate 임계값. None이면 기존 soft 출력 사용
     
     Returns:
         dict: {
@@ -759,6 +763,9 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
             'macro_recall': 클래스별 평균 재현율,
             'macro_f1': 클래스별 평균 F1,
             'overall_recall': 전체 재현율,
+            'gate_tumor_recall': 매칭된 실제 Tumor 중 Tumor branch로 보낸 비율,
+            'gate_other_recall': 매칭된 실제 Other 중 Other branch로 보낸 비율,
+            'gate_score': 두 gate recall의 조화평균,
             'class_stats': 클래스별 상세 통계
         }
     """
@@ -781,6 +788,11 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
     class_fp = np.zeros(num_classes)  # False Positive (잘못 탐지 또는 잘못 분류)
     class_fn = np.zeros(num_classes)  # False Negative (탐지 실패)
     class_gt_count = np.zeros(num_classes)  # GT 개수
+    other_class_index = num_classes - 1
+    gate_tumor_total = 0
+    gate_tumor_correct = 0
+    gate_other_total = 0
+    gate_other_correct = 0
     
     with torch.no_grad():
         for batch_idx, (images, targets) in enumerate(val_loader):
@@ -788,10 +800,22 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
             
             # 예측 (단일 이미지)
             with torch.amp.autocast('cuda'):
-                pred = model(images)
+                if tumor_threshold is None:
+                    pred = model(images)
+                else:
+                    from utils.hierarchical import apply_tumor_gate
+                    components = model(images, return_components=True)
+                    pred = apply_tumor_gate(
+                        components, tumor_threshold=tumor_threshold
+                    )
             
             # NMS 적용
-            results = util.non_max_suppression(pred, confidence_threshold=0.25, iou_threshold=0.45)
+            results = util.non_max_suppression(
+                pred,
+                confidence_threshold=0.25,
+                iou_threshold=0.45,
+                class_agnostic=class_agnostic_nms,
+            )
             
             # 각 이미지에 대해 처리
             for i in range(len(images)):
@@ -858,6 +882,17 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
                                 
                                 gt_cls = int(batch_cls[gt_idx])
                                 pred_cls = int(pred_classes[pred_idx])
+
+                                # Detection과 분리한 binary Tumor/Other gate 통계
+                                # (매칭된 cell만 대상으로 test notebook과 동일하게 계산)
+                                if gt_cls == other_class_index:
+                                    gate_other_total += 1
+                                    if pred_cls == other_class_index:
+                                        gate_other_correct += 1
+                                else:
+                                    gate_tumor_total += 1
+                                    if pred_cls != other_class_index:
+                                        gate_tumor_correct += 1
                                 
                                 # 클래스가 일치하면 TP
                                 if gt_cls == pred_cls:
@@ -891,6 +926,16 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
     # 메트릭 계산
     detection_recall = total_matched / total_gt if total_gt > 0 else 0
     classification_accuracy = total_correct_class / total_matched if total_matched > 0 else 0
+    gate_tumor_recall = (
+        gate_tumor_correct / gate_tumor_total if gate_tumor_total > 0 else 0
+    )
+    gate_other_recall = (
+        gate_other_correct / gate_other_total if gate_other_total > 0 else 0
+    )
+    gate_score = (
+        2 * gate_tumor_recall * gate_other_recall
+        / (gate_tumor_recall + gate_other_recall + 1e-9)
+    )
     
     # 클래스별 메트릭
     class_precision = []
@@ -941,6 +986,9 @@ def compute_point_label_metrics_single(model, val_loader, device, params, distan
         'macro_recall': macro_recall,
         'macro_f1': macro_f1,
         'overall_recall': overall_recall,
+        'gate_tumor_recall': gate_tumor_recall,
+        'gate_other_recall': gate_other_recall,
+        'gate_score': gate_score,
         'class_stats': class_stats
     }
 
@@ -1275,4 +1323,3 @@ def visualize_ground_truth_and_prediction_separately_detail_single(model, datase
     
     # plt.show()
     plt.clf()
-

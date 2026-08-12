@@ -90,7 +90,7 @@ def make_anchors(x, strides, offset=0.5):
         _, _, h, w = x[i].shape
         sx = torch.arange(end=w, device=device, dtype=dtype) + offset  # shift x
         sy = torch.arange(end=h, device=device, dtype=dtype) + offset  # shift y
-        sy, sx = torch.meshgrid(sy, sx)
+        sy, sx = torch.meshgrid(sy, sx, indexing='ij')
         anchor_tensor.append(torch.stack((sx, sy), -1).view(-1, 2))
         stride_tensor.append(torch.full((h * w, 1), stride, dtype=dtype, device=device))
     return torch.cat(anchor_tensor), torch.cat(stride_tensor)
@@ -120,7 +120,15 @@ def compute_metric(output, target, iou_v):
     return torch.tensor(correct, dtype=torch.bool, device=output.device)
 
 
-def non_max_suppression(outputs, confidence_threshold=0.001, iou_threshold=0.65, class_agnostic=False):
+def non_max_suppression(outputs, confidence_threshold=0.001, iou_threshold=0.65,
+                        class_agnostic=False, multi_label=False):
+    """Apply NMS to model predictions.
+
+    IHC cell classes are mutually exclusive, so the default is one best class
+    per anchor.  Set ``multi_label=True`` only for genuinely multi-label data.
+    The previous implementation emitted every class above the threshold, which
+    could label the same cell as both ``other`` and a tumor grade.
+    """
     max_wh = 7680
 
 
@@ -142,7 +150,7 @@ def non_max_suppression(outputs, confidence_threshold=0.001, iou_threshold=0.65,
         # matrix nx6 (box, confidence, cls)
         box, cls = x.split((4, nc), 1)
         box = wh2xy(box)  # (cx, cy, w, h) to (x1, y1, x2, y2)
-        if nc > 1:
+        if nc > 1 and multi_label:
             i, j = (cls > confidence_threshold).nonzero(as_tuple=False).T
             x = torch.cat((box[i], x[i, 4 + j, None], j[:, None].float()), 1)
         else:  # best class only
