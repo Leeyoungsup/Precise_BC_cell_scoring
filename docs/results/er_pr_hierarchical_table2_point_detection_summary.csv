@@ -1,0 +1,18 @@
+Category,Metric,Value
+Detection (class-agnostic),Total GT boxes,351889
+,Total Predictions,403664
+,Matched (TP_det),337935
+,Detection Precision,0.8372
+,Detection Recall,0.9603
+,Detection F1 (= DQ),0.8945
+Localization,Mean IoU (matched),0.8344
+,Mean Center Err. (px),1.01 ± 0.72
+,Median Center Err. (px),0.90
+Classification (matched),Accuracy (= CQ),0.9521
+,Macro F1,0.8163
+,Micro F1,0.8517
+,Weighted F1,0.8518
+Panoptic Quality,DQ (Detection Quality),0.8945
+,CQ (Classification Q.),0.9521
+,PQ = DQ × CQ,0.8517
+FROC,Avg FP / image,31.11

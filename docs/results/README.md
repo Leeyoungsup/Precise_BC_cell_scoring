@@ -15,6 +15,11 @@ summary (`*_table2_point_detection_summary.csv`).
 The Notion-ready ER/PR report is in `er_pr_notion.md`, with its eight image
 assets under `er_pr_figures/`.
 
+The hierarchical ER/PR report is in `er_pr_hierarchical_notion.md`, with its
+eight image assets under `er_pr_hierarchical_figures/`. It includes explicit
+Tumor/Other gate errors and a same-slide-split comparison against the flat
+ER/PR checkpoint.
+
 The binary Tumor/Non-tumor reports are in
 `membrane_br_tumor_notion.md` and `nucleus_br_tumor_notion.md`. Their figure
 assets are stored in the matching `*_figures/` directories. Both reports start
