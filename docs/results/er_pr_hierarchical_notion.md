@@ -30,6 +30,25 @@
 
 ---
 
+## 🧠 Model Architecture — Flat vs Hierarchical
+
+**기존 Flat 5-class 모델**
+
+![Flat Model Layer Architecture](model_architecture/flat_model_layer_architecture_ai.png)
+
+**Hierarchical 모델**
+
+![Hierarchical Model Layer Architecture](model_architecture/hierarchical_model_layer_architecture_ai.png)
+
+- 두 모델은 동일한 YOLOv11-m DarkNet backbone과 DarkFPN을 사용함.
+- 기존 모델은 5개 class sigmoid score를 하나의 flat classification head에서 직접 예측함.
+- Hierarchical 모델은 `Objectness → Tumor/Other gate → Tumor grade`를 분리하고, 최종적으로 기존 평가 코드와 호환되는 `[box + 5 scores]` tensor로 결합함.
+- 그림의 입력은 실제 ER/PR 데이터셋 원본 512×512 patch를 수정 없이 사용함.
+
+통합 비교도, 간단 비교도와 편집 가능한 SVG는 `model_architecture/` 폴더에 함께 저장되어 있음.
+
+---
+
 ## 🏆 Overall Performance (TL;DR)
 
 | Metric | Value |
